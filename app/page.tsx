@@ -483,13 +483,21 @@ export default function Home() {
   }
 
   return (
-    <div className="fixed inset-0 min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 flex items-center justify-center p-4 overflow-auto">
+    <div 
+      className="fixed inset-0 min-h-screen flex items-center justify-center p-4 overflow-auto"
+      style={{
+        background: 'linear-gradient(to bottom right, #0f172a, rgba(147, 51, 234, 0.2), #0f172a)',
+        minHeight: '100vh',
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-        className="w-full max-w-4xl min-h-[85vh] max-h-[90vh] md:max-h-[85vh] flex flex-col bg-black/30 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+        className="w-full max-w-4xl flex flex-col border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
         style={{
+          height: '90vh',
+          maxHeight: '90vh',
           background: 'rgba(0, 0, 0, 0.3)',
           backdropFilter: 'blur(40px)',
           WebkitBackdropFilter: 'blur(40px)',
