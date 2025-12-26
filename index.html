@@ -11,7 +11,8 @@
 
 body {
   margin: 0;
-  height: 100vh;
+  min-height: 100vh;
+  min-height: 100svh;
   background: linear-gradient(135deg, #1f1f2e, #2c2c3e);
   font-family: "Segoe UI", sans-serif;
   display: flex;
@@ -24,6 +25,7 @@ body {
 .app {
   width: 420px;
   height: 600px;
+  max-height: calc(100svh - 40px);
   background: rgba(40, 40, 55, 0.75);
   backdrop-filter: blur(15px);
   border-radius: 18px;
