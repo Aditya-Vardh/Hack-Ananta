@@ -17,10 +17,22 @@
   margin: 0;
 }
 
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #0f172a; /* Fallback for slate-900 */
+  background-image: linear-gradient(to bottom right, #0f172a, rgba(147, 51, 234, 0.2), #0f172a);
+  min-height: 100vh;
 }
 
 /* Custom scrollbar */
