@@ -27,7 +27,16 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
   }
 
   return (
-    <div className="relative px-4 py-3 border-t border-white/10 bg-black/20 backdrop-blur-xl">
+    <div 
+      className="relative z-10 px-4 py-3 border-t"
+      style={{
+        background: 'linear-gradient(135deg, rgba(40, 40, 55, 0.6), rgba(35, 35, 50, 0.5))',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 -1px 0 rgba(255, 255, 255, 0.05) inset',
+      }}
+    >
       <div className="flex items-center gap-3">
         <div className="flex-1 relative">
           <input
@@ -39,7 +48,14 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
             onBlur={() => setIsFocused(false)}
             placeholder="Type your message..."
             disabled={disabled}
-            className="w-full px-4 py-3 pr-12 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 pr-12 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: 'linear-gradient(135deg, rgba(80, 80, 95, 0.6), rgba(70, 70, 85, 0.5))',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              backdropFilter: 'blur(15px) saturate(150%)',
+              WebkitBackdropFilter: 'blur(15px) saturate(150%)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05) inset',
+            }}
           />
           {isFocused && (
             <motion.div
@@ -55,7 +71,10 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
           disabled={!message.trim() || disabled}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl text-white shadow-lg shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200"
+          className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200 relative overflow-hidden"
+          style={{
+            boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset',
+          }}
         >
           <motion.svg
             width="20"
