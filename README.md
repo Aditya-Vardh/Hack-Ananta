@@ -1,4 +1,4 @@
-# Student Mental Health Support Chatbot
+# Sovyn AI
 
 A modern, premium AI chatbot interface built with Next.js, Framer Motion, and Tailwind CSS.
 
