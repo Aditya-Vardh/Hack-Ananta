@@ -1011,10 +1011,10 @@ export default function Home() {
             </motion.div>
             <div>
               <h1 className="text-lg md:text-xl font-semibold text-white">
-                Student Mental Support
+                Sovyn AI
               </h1>
               <p className="text-xs md:text-sm text-white/60">
-                Emotional support, not medical advice
+                 A quiet space to talk
               </p>
             </div>
           </div>
