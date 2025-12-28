@@ -6,10 +6,9 @@ import { ReactNode } from 'react'
 interface ChatMessageProps {
   message: string | ReactNode
   isUser: boolean
-  isTyping?: boolean
 }
 
-export default function ChatMessage({ message, isUser, isTyping = false }: ChatMessageProps) {
+export default function ChatMessage({ message, isUser }: ChatMessageProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}

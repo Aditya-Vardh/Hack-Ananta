@@ -12,13 +12,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="h-full" style={{ height: '100%' }}>
-      <body className="h-full" style={{ height: '100%', margin: 0, padding: 0 }}>
-        <div style={{ minHeight: '100vh', width: '100%' }}>
-          {children}
-        </div>
-      </body>
-    </html>
-  )
+  <html lang="en">
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+    </head>
+    <body className="min-h-screen w-full m-0 p-0 overflow-hidden bg-black">
+      {children}
+    </body>
+  </html>
+)
 }
 
