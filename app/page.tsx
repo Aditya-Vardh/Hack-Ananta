@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import ChatMessage from '@/components/ChatMessage'
 import TypingIndicator from '@/components/TypingIndicator'
 import ChatInput from '@/components/ChatInput'
+import FlashcardModal from '@/components/FlashcardModal'
+import BreathingModal from '@/components/BreathingModal'
 
 interface Message {
   id: string
@@ -445,16 +447,158 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hi 👋 I'm here to listen.\n\nHow are you feeling today?",
+      text: "Hi 👋 I'm here to listen.\n\nThis is emotional support, not medical advice.\n\nHow are you feeling today?",
       isUser: false,
     },
   ])
   const [isTyping, setIsTyping] = useState(false)
+  const [convState, setConvState] = useState<{ topic?: string; awaiting?: string; temp?: any }>({})
+  const [flashcards, setFlashcards] = useState<{ q: string; a: string; known?: boolean }[]>([])
+  const [showFlashcards, setShowFlashcards] = useState(false)
+  const [lastPlan, setLastPlan] = useState<string | null>(null)
+  const [showBreathing, setShowBreathing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isTyping])
+
+
+
+  // Helper: detect broad topic from free text
+  const detectTopicFromText = (text: string) => {
+    const lower = text.toLowerCase()
+    if (/\b(stress|stressed|stressful|overwhelmed|burnout|burnt out|anxious|anxiety)\b/.test(lower)) return 'stress'
+    if (/\b(exam|test|study|studying|homework|assignment|midterm|final|prepare|revision)\b/.test(lower)) return 'study'
+    return null
+  }
+
+  const parseDaysFromText = (text: string) => {
+    const m = text.match(/(\d+)\s*(?:days|day)/i)
+    if (m) return parseInt(m[1], 10)
+    const d = text.match(/(\d+)\b/)
+    if (d) return parseInt(d[1], 10)
+    return null
+  }
+
+  const generateStudyPlan = (topics: string[], days = 7) => {
+    if (!topics.length) return 'I need a few topics to work with — can you list the main topics you want to study (comma separated)?'
+
+    const daysToUse = Math.max(1, days)
+    // Distribute topics across days
+    const planLines: string[] = []
+    for (let i = 0; i < daysToUse; i++) {
+      const topic = topics[i % topics.length]
+      planLines.push(`Day ${i + 1}: Focus on **${topic}** — 2 focused sessions (25–45 min each) with active recall + short practice questions. Take a 10–15 min break between sessions.`)
+    }
+
+    planLines.push('\nQuick study tips:')
+    planLines.push('- Start with the hardest topic first and mix in easier ones.')
+    planLines.push('- Use Pomodoro (25–45min focus / 5–15min break) and active recall.')
+    planLines.push('- Practice past papers or questions under timed conditions.')
+    planLines.push('- Sleep, hydrate, and take short walks — brain needs rest to consolidate learning.')
+
+    return planLines.join('\n')
+  }
+
+  const generateStressResponseForDetails = (details: string) => {
+    const lower = details.toLowerCase()
+    const isAcademic = /exam|assignment|deadline|grade|test|homework|study|midterm|final/.test(lower)
+
+    let resp = "Thanks for sharing that — I'm really sorry you're dealing with this. You're not alone and your feelings are valid.\n\n"
+
+    if (isAcademic) {
+      resp += "It sounds like a lot of academic pressure. Here are a few things that might help:\n"
+      resp += "- Break tasks into small, concrete steps and make a short schedule you can actually follow.\n"
+      resp += "- Try 25–45 minute focused study sessions (Pomodoro) with short breaks.\n"
+      resp += "- Use active recall and practice problems, not just rereading.\n"
+      resp += "- Prioritize by deadline and impact — what will move the needle most?\n\n"
+      resp += "Would you like me to help make a quick study plan? If yes, reply with the subject, how many days until the exam, and the main topics (comma separated)."
+    } else {
+      resp += "Here are some quick coping ideas you can try right now:\n"
+      resp += "- Try a grounding exercise: 4s inhale, 4s hold, 4s exhale for a few rounds.\n"
+      resp += "- Take a short walk, get some water, or step outside for a few minutes.\n"
+      resp += "- Name 5 things you can see, 4 you can touch, 3 you can hear — grounding helps anxiety.\n\n"
+      resp += "If you'd like, I can also suggest study tips (if it's school stress) or help you draft a short to-do plan. Want that? Reply 'study' or 'calm' and I'll follow up." 
+    }
+
+    return resp
+  }
+
+  // Helpers: explanations, flashcards, practice questions, summaries
+  const generateExplanation = (topic: string) => {
+    const t = topic.trim()
+    if (!t) return "Can you tell me the topic you'd like explained?"
+
+    return `**${t} — quick explainer**\n\n` +
+      `- What it is: A short, plain-language definition of **${t}**.\n` +
+      `- Why it matters: How ${t} shows up in problems or real-world contexts.\n` +
+      `- Quick study tips: Break it down, draw diagrams, teach it to someone (or pretend to).\n\n` +
+      `Want an example problem or some flashcards for **${t}**? Reply 'flashcards: ${t}' or 'practice: ${t}'.`
+  }
+
+  const generateFlashcards = (topics: string[]) => {
+    const t = topics.map(s => s.trim()).filter(Boolean)
+    if (!t.length) return [] as { q: string; a: string }[]
+
+    const cards: { q: string; a: string }[] = []
+    t.slice(0, 8).forEach((topic) => {
+      const base = topic.replace(/^the\s+/i, '')
+      cards.push({ q: `What is ${base}?`, a: `Short definition of ${base}` })
+      cards.push({ q: `Name one key use or property of ${base}.`, a: `One important property or use of ${base}` })
+      cards.push({ q: `Give a quick example or problem involving ${base}.`, a: `Short example/solution involving ${base}` })
+    })
+
+    return cards
+  }
+
+  const generatePracticeQuestion = (topic: string) => {
+    const t = topic.trim()
+    if (!t) return "Tell me the topic you'd like a practice question about."
+
+    // Simple generator: produce a short MCQ or short-answer prompt
+    return `Practice question on **${t}**:\n\nQ: Briefly explain the main idea behind ${t} or show how you'd solve a typical problem.\n\nIf you'd like multiple choice, reply 'mcq: ${t}' and I'll create an MCQ.`
+  }
+
+  const generateSummary = (text: string) => {
+    const s = text.trim()
+    if (!s) return "Paste or type the text you'd like summarized."
+    const first = s.split(/[\.\!\?]\s+/)[0]
+    const bullets = ['Main idea: ' + first, 'Actionable step 1: Identify the core problem', 'Actionable step 2: Make a short 1–3 point to-do list']
+    return `Summary:\n\n- ${bullets.join('\n- ')}\n\nWant a shorter or more detailed summary? Say 'short summary' or 'detailed summary'.`
+  }
+
+  const generateMCQ = (topic: string) => {
+    const t = topic.trim()
+    if (!t) return 'Tell me the topic for an MCQ.'
+    // Generic MCQ template — concise question, four options, and correct answer + short explanation
+    const question = `MCQ on **${t}**:\n\nQ: Which statement best describes the core idea of ${t}?\nA) A simplistic/incorrect description.\nB) A commonly accepted correct description.\nC) A partially correct but misleading statement.\nD) An unrelated option.\n\nCorrect: B\nExplanation: The core idea is best captured by option B — focus on the main principle and practice short problems to internalize it.`
+    return question
+  }
+
+  const generateMotivation = () => {
+    const lines = [
+      "You've got this — small consistent steps add up.",
+      "Progress beats perfection. Try one focused 25-minute session and celebrate that win.",
+      "Remember why you started. One step today keeps the momentum going.",
+    ]
+    return `${random(lines)}\n\nWant a short plan to get started? Say 'study plan' or '1-hour plan'.`
+  }
+
+  const generateTimeManagementTips = () => {
+    return `Time management tips:\n\n- Break tasks into 25–45 minute focus sessions (Pomodoro) with short breaks.\n- Prioritize tasks by deadline and impact (do hardest/most urgent first).\n- Use a simple daily to-do list with 3 top priorities.\n- Batch similar tasks and remove distractions during focus sessions.`
+  }
+
+  const quickReplies: { label: string; text: string; emoji: string }[] = [
+    { label: "I'm stressed", text: "I'm stressed", emoji: '😰' },
+    { label: 'I need a study plan', text: 'I need a study plan', emoji: '📅' },
+    { label: 'Explain recursion', text: 'Explain recursion', emoji: '🔁' },
+    { label: 'Make flashcards for calculus', text: 'Make flashcards for calculus', emoji: '🧾' },
+    { label: 'Practice question on algebra', text: 'Practice question on algebra', emoji: '🧮' },
+    { label: 'Motivate me', text: 'Motivate me', emoji: '💪' },
+    { label: 'Time management tips', text: 'Time management tips', emoji: '⏱️' },
+    { label: 'Breathing exercise', text: 'breathing exercise', emoji: '🌬️' },
+  ]
 
   const handleSend = async (text: string) => {
     if (!text.trim()) return
@@ -468,7 +612,175 @@ export default function Home() {
     setMessages((prev) => [...prev, userMessage])
     setIsTyping(true)
 
-    // Simulate thinking time
+    // Crisis / safety check (non-judgmental resource) — keep brief and direct
+    const lower = text.toLowerCase()
+    if (/\b(suicide|kill myself|want to die|self[- ]harm|hurt myself)\b/.test(lower)) {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      const crisisMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        isUser: false,
+        text: "I'm really sorry you're feeling this way. If you're in immediate danger, please call your local emergency number right now. If you can, consider contacting a crisis hotline or a trusted person nearby. If you'd like, I can provide hotline numbers or resources in your country."
+      }
+      setIsTyping(false)
+      setMessages((prev) => [...prev, crisisMessage])
+      return
+    }
+
+    // Direct command parsing (explain, flashcards, practice, mcq, summarize, motivate, time tips)
+    const explainMatch = text.match(/^\s*(?:explain|explain:)\s+(.+)/i)
+    if (explainMatch) {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      const resp = generateExplanation(explainMatch[1])
+      setIsTyping(false)
+      const botMsg: Message = { id: (Date.now() + 1).toString(), text: resp, isUser: false }
+      setMessages((prev) => [...prev, botMsg])
+      return
+    }
+
+    const flashMatch = text.match(/(?:flashcards|make flashcards(?: for)?|flashcards for)\s*[:\s]*(.+)/i)
+    if (flashMatch) {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      const topics = flashMatch[1].split(/[;,\n]/).map((s) => s.trim()).filter(Boolean)
+      const cards = generateFlashcards(topics)
+      if (!cards.length) {
+        setIsTyping(false)
+        setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), text: "I didn't catch any topics — list 1–4 topics separated by commas.", isUser: false }])
+        return
+      }
+      // open modal with generated cards
+      setFlashcards(cards.map(c => ({ ...c, known: false })))
+      setShowFlashcards(true)
+      setIsTyping(false)
+      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), text: `I've made ${cards.length} flashcards — opening study mode.` , isUser: false }])
+      return
+    }
+
+    const practiceMatch = text.match(/^(?:practice(?: question)?(?: on| about)?|practice:)\s*[:\s]*(.+)/i)
+    if (practiceMatch && practiceMatch[1]) {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      const resp = generatePracticeQuestion(practiceMatch[1])
+      setIsTyping(false)
+      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), text: resp, isUser: false }])
+      return
+    }
+
+    const mcqMatch = text.match(/^(?:mcq|mcq:|mcq on)\s*[:\s]*(.+)/i)
+    if (mcqMatch && mcqMatch[1]) {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      const resp = generateMCQ(mcqMatch[1])
+      setIsTyping(false)
+      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), text: resp, isUser: false }])
+      return
+    }
+
+    const summarizeMatch = text.match(/^summarize\s*[:\s]*(.+)/i)
+    if (summarizeMatch && summarizeMatch[1]) {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      const resp = generateSummary(summarizeMatch[1])
+      setIsTyping(false)
+      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), text: resp, isUser: false }])
+      return
+    }
+
+    if (/motivat(e|ion)?/i.test(text)) {
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      const resp = generateMotivation()
+      setIsTyping(false)
+      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), text: resp, isUser: false }])
+      return
+    }
+
+    if (/time\s*management|time-management|procrastin/i.test(text)) {
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      const resp = generateTimeManagementTips()
+      setIsTyping(false)
+      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), text: resp, isUser: false }])
+      return
+    }
+
+    if (/breath|breathing|breathing exercise|breath exercise/i.test(text)) {
+      setIsTyping(false)
+      setShowBreathing(true)
+      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: 'Starting a short breathing exercise — follow the on-screen guide.', isUser: false }])
+      return
+    }
+
+    // Handle waiting-for-input conversational states
+    const { awaiting, topic, temp } = convState || {}
+
+    if (awaiting === 'details' && topic === 'stress') {
+      await new Promise((resolve) => setTimeout(resolve, 900))
+      const responseText = generateStressResponseForDetails(text)
+      setConvState({ topic: 'stress', awaiting: 'choice' })
+      setIsTyping(false)
+      const botMsg: Message = { id: (Date.now() + 1).toString(), text: responseText, isUser: false }
+      setMessages((prev) => [...prev, botMsg])
+      return
+    }
+
+    if (awaiting === 'study_info' && topic === 'study') {
+      // Expect subject and days info
+      const days = parseDaysFromText(text)
+      if (!days) {
+        await new Promise((resolve) => setTimeout(resolve, 700))
+        const askDays: Message = { id: (Date.now() + 1).toString(), isUser: false, text: "Thanks — how many days do you have until the exam (or how many days can you study)?" }
+        setIsTyping(false)
+        setMessages((prev) => [...prev, askDays])
+        return
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setConvState({ topic: 'study', awaiting: 'study_topics', temp: { days } })
+      setIsTyping(false)
+      const askTopics: Message = { id: (Date.now() + 1).toString(), isUser: false, text: "Great — how about the main topics you need to cover? Please list them comma separated (e.g., Topic A, Topic B, Topic C) so I can create a simple plan." }
+      setMessages((prev) => [...prev, askTopics])
+      return
+    }
+
+    if (awaiting === 'study_topics' && topic === 'study') {
+      const days = temp?.days ?? 7
+      const topics = text.split(/[;,\n]/).map((s) => s.trim()).filter(Boolean)
+      if (!topics.length) {
+        await new Promise((resolve) => setTimeout(resolve, 700))
+        const askAgain: Message = { id: (Date.now() + 1).toString(), isUser: false, text: "I didn't catch any topics — can you list 2–6 main topics separated by commas?" }
+        setIsTyping(false)
+        setMessages((prev) => [...prev, askAgain])
+        return
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 900))
+      const plan = generateStudyPlan(topics, days)
+      setConvState({})
+      setIsTyping(false)
+      setLastPlan(`Here's a short ${days}-day plan:\n\n${plan}`)
+      const planMsg: Message = { id: (Date.now() + 1).toString(), isUser: false, text: `Here's a short ${days}-day plan:\n\n${plan}` }
+      setMessages((prev) => [...prev, planMsg])
+      return
+    }
+
+    // Detect new topic triggers (stateless)
+    const detected = detectTopicFromText(text)
+    if (detected === 'stress') {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      setConvState({ topic: 'stress', awaiting: 'details' })
+      setIsTyping(false)
+      const botMsg: Message = { id: (Date.now() + 1).toString(), isUser: false, text: "I'm sorry you're feeling stressed — can you tell me what happened or what's causing the stress? A short sentence is fine." }
+      setMessages((prev) => [...prev, botMsg])
+      return
+    }
+
+    if (detected === 'study') {
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      setConvState({ topic: 'study', awaiting: 'study_info' })
+      setIsTyping(false)
+      const askStudyMsg: Message = { id: (Date.now() + 1).toString(), isUser: false, text: "Got it — do you want study tips or a quick study plan? If you want a plan, tell me the subject and how many days you have until the exam." }
+      setMessages((prev) => [...prev, askStudyMsg])
+      return
+    }
+
+
+
+    // Fallback to existing behavior
     await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 1000))
 
     const botResponse: Message = {
@@ -480,6 +792,22 @@ export default function Home() {
     setIsTyping(false)
     setMessages((prev) => [...prev, botResponse])
   }
+
+  // Keyboard shortcuts for quick replies (1..N)
+  useEffect(() => {
+    const keyHandler = (e: KeyboardEvent) => {
+      const k = (e as KeyboardEvent).key
+      if (/^[1-9]$/.test(k)) {
+        const idx = parseInt(k, 10) - 1
+        if (quickReplies[idx]) {
+          handleSend(quickReplies[idx].text)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', keyHandler)
+    return () => window.removeEventListener('keydown', keyHandler)
+  }, [handleSend, quickReplies])
 
   return (
     <div 
@@ -1035,8 +1363,72 @@ export default function Home() {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Quick replies */}
+        <div className="sticky bottom-20 z-20 px-4 md:px-6 pb-3">
+          <div className="flex gap-2 items-center overflow-x-auto py-2" role="toolbar" aria-label="Quick actions">
+            {quickReplies.map((r, i) => (
+              <button
+                key={i}
+                onClick={() => handleSend(r.text)}
+                title={`(${i + 1}) ${r.label}`}
+                aria-label={`${r.label}. Shortcut ${i + 1}`}
+                className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white/6 hover:bg-white/12 focus:outline-none focus:ring-2 focus:ring-emerald-400/60 text-sm text-white/95"
+                style={{ border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <span aria-hidden className="text-lg">{r.emoji}</span>
+                <span className="whitespace-nowrap">{r.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Saved plan / actions */}
+        {lastPlan && (
+          <div className="px-4 md:px-6 pb-3">
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={() => {
+                  localStorage.setItem('savedStudyPlan', lastPlan)
+                  setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Saved study plan to localStorage.', isUser: false }])
+                }}
+                className="px-3 py-1.5 rounded-lg bg-white/6 hover:bg-white/10 text-sm text-white/90"
+              >Save plan</button>
+              <button
+                onClick={() => {
+                  const blob = new Blob([lastPlan], { type: 'text/plain' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = 'study-plan.txt'
+                  a.click()
+                  URL.revokeObjectURL(url)
+                }}
+                className="px-3 py-1.5 rounded-lg bg-white/6 hover:bg-white/10 text-sm text-white/90"
+              >Export plan</button>
+              <button
+                onClick={() => { setLastPlan(null) }}
+                className="px-3 py-1.5 rounded-lg bg-white/6 hover:bg-white/10 text-sm text-white/90"
+              >Dismiss</button>
+            </div>
+          </div>
+        )}
+
         {/* Input */}
         <ChatInput onSend={handleSend} disabled={isTyping} />
+
+        {/* flashcard modal */}
+        {showFlashcards && (
+          <FlashcardModal
+            cards={flashcards}
+            onUpdate={(cards: any) => setFlashcards(cards)}
+            onClose={() => setShowFlashcards(false)}
+          />
+        )}
+
+        {/* breathing modal */}
+        {showBreathing && (
+          <BreathingModal onClose={() => setShowBreathing(false)} />
+        )}
       </motion.div>
       </div>
     </div>
