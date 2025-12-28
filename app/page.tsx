@@ -445,7 +445,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hi 👋 I'm here to listen.\n\nThis is emotional support, not medical advice.\n\nHow are you feeling today?",
+      text: "Hi 👋 I'm here to listen.\n\nHow are you feeling today?",
       isUser: false,
     },
   ])
