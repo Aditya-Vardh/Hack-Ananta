@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Student Mental Health Support',
-  description: 'A supportive AI companion for student mental health',
+  title: 'Sovyn AI',
+  description: 'A supportive AI companion',
 }
 
 export default function RootLayout({

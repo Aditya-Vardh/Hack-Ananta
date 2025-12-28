@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Student Mental Support Chatbot</title>
+
+<style>
+body {
+  margin: 0;
+  background: #343541;
+  font-family: Arial, sans-serif;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.header {
+  padding: 15px;
+  text-align: center;
+  background: #202123;
+  font-size: 18px;
+}
+
+.chat {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.bot, .user {
+  max-width: 75%;
+  padding: 12px 15px;
+  margin: 10px 0;
+  border-radius: 8px;
+  line-height: 1.4;
+}
+
+.bot {
+  background: #444654;
+}
+
+.user {
+  background: #19c37d;
+  color: black;
+  margin-left: auto;
+}
+
+.input-area {
+  display: flex;
+  padding: 15px;
+  background: #202123;
+}
+
+input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 6px;
+  border: none;
+  outline: none;
+  font-size: 15px;
+}
+
+button {
+  margin-left: 10px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 6px;
+  background: #19c37d;
+  font-size: 15px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  🧠 Student Mental Health Support Chatbot
+</div>
+
+<div class="chat" id="chat">
+  <div class="bot">
+    Hi 👋 I’m here to listen.<br>
+    This is emotional support, not medical advice.<br>
+    How are you feeling today?
+  </div>
+</div>
+
+<div class="input-area">
+  <input id="msg" placeholder="Type your message..." />
+  <button onclick="send()">Send</button>
+</div>
+<script>
+function random(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function send() {
+  const input = document.getElementById("msg");
+  const text = input.value.trim();
+  if (!text) return;
+
+  const chat = document.getElementById("chat");
+  const lower = text.toLowerCase();
+
+  chat.innerHTML += `<div class="user">${text}</div>`;
+
+  let reply = random([
+    "Hmm, tell me more 👀",
+    "I'm listening 👂",
+    "Gotcha. What's been going on?",
+    "Alright, I'm here with you."
+  ]);
+
+  if (lower.includes("stress")) {
+    reply = random([
+      "Ah yeah, stress is the worst 😮‍💨. Take a slow breath with me — in… out.",
+      "Sounds like your brain is doing overtime. Try focusing on one small thing at a time.",
+      "Stress sneaks up on everyone. You're not weak for feeling this way."
+    ]);
+  }
+  else if (lower.includes("anxious") || lower.includes("anxiety")) {
+    reply = random([
+      "Okay yeah, anxiety can be super annoying 😵‍💫. Let’s slow things down a bit.",
+      "That jittery feeling sucks. Try the 5-4-3-2-1 grounding trick for a minute.",
+      "Your mind might be racing, but you're actually safe right now 💙."
+    ]);
+  }
+  else if (lower.includes("sad") || lower.includes("lonely") || lower.includes("empty")) {
+    reply = random([
+      "Hey… that’s heavy. Thanks for trusting me with it 💙.",
+      "Feeling like this doesn’t mean anything is wrong with you.",
+      "Lonely days hit hard. You don’t have to deal with it alone here."
+    ]);
+  }
+  else if (lower.includes("exam") || lower.includes("test")) {
+    reply = random([
+      "Ah yes, exams — the final boss fight 🎮😅.",
+      "One exam ≠ your entire future. Promise.",
+      "Try short study bursts + breaks. Brains love breaks."
+    ]);
+  }
+  else if (lower.includes("help")) {
+    reply = random([
+      "If things feel too heavy, it’s okay to ask for help.",
+      "You deserve support. India Mental Health Helpline: 9152987821",
+      "Talking to a real person can help more than you think 💙."
+    ]);
+  }
+  else if (lower.includes("hi") || lower.includes("hello")) {
+    reply = random([
+      "Heyyy 👋 how are you feeling today?",
+      "Hi! I’m here. What’s on your mind?",
+      "Hello there 😄 tell me what’s going on."
+    ]);
+  }
+  else if (lower.includes("thanks") || lower.includes("thank you")) {
+    reply = random([
+      "Anytime 😊",
+      "Glad I could help!",
+      "Always here for you 💙"
+    ]);
+  }
+
+  setTimeout(() => {
+    chat.innerHTML += `<div class="bot">${reply}</div>`;
+    chat.scrollTop = chat.scrollHeight;
+  }, 500);
+
+  input.value = "";
+}
+</script>
+</body>
+</html>
